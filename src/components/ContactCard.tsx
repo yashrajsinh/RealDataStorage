@@ -1,11 +1,11 @@
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import React from 'react';
-import { Contacts } from '../model/Contacts';
+import { Contact } from '../model/Contact';
 
 type Props = {
-  contact: Contacts;
-  onPress?: (contact: Contacts) => void;
-  onCallPress?: (contact: Contacts) => void;
+  contact: Contact;
+  onPress?: (contact: Contact) => void;
+  onCallPress?: (contact: Contact) => void;
 };
 
 const ContactCard = ({ contact, onPress, onCallPress }: Props) => {
