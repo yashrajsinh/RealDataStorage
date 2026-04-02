@@ -1,11 +1,4 @@
-import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-} from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import React from 'react';
 import { Contact } from '../../model/Contact';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -13,24 +6,15 @@ import { Swipeable } from 'react-native-gesture-handler';
 type Props = {
   contact: Contact;
   onPress?: (contact: Contact) => void;
-  onCallPress?: (contact: Contact) => void;
+  onDelete?: (contact: Contact) => void;
 };
 
-const ContactCard = ({ contact, onPress, onCallPress }: Props) => {
+const ContactCard = ({ contact, onPress, onDelete }: Props) => {
   const renderRightActions = () => {
     return (
       <TouchableOpacity
         style={styles.deleteBox}
-        onPress={() => {
-          Alert.alert('Delete Contact', `Delete ${contact.firstName}?`, [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Delete',
-              style: 'destructive',
-              onPress: () => onCallPress?.(contact),
-            },
-          ]);
-        }}
+        onPress={() => onDelete?.(contact)}
       >
         <Text style={styles.deleteText}>Delete</Text>
       </TouchableOpacity>
@@ -38,19 +22,17 @@ const ContactCard = ({ contact, onPress, onCallPress }: Props) => {
   };
 
   return (
-    <Swipeable renderRightActions={renderRightActions}>
+    <Swipeable renderRightActions={renderRightActions} overshootRight={false}>
       <TouchableOpacity
         activeOpacity={0.6}
         style={styles.container}
         onPress={() => onPress?.(contact)}
       >
-        {/* User image */}
         <Image
           source={{ uri: contact.profileImageUrl }}
           style={styles.avatar}
         />
 
-        {/* Info */}
         <View style={styles.info}>
           <Text style={styles.name}>
             {contact.firstName} {contact.lastName}
@@ -71,14 +53,16 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     backgroundColor: '#fff',
+
+    // iOS divider
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#E5E5EA',
   },
 
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     marginRight: 12,
   },
 
@@ -87,8 +71,7 @@ const styles = StyleSheet.create({
   },
 
   name: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 17,
     color: '#000',
   },
 
@@ -108,6 +91,7 @@ const styles = StyleSheet.create({
 
   deleteText: {
     color: '#fff',
+    fontSize: 15,
     fontWeight: '600',
   },
 });

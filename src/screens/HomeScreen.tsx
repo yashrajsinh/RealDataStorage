@@ -1,17 +1,19 @@
-import { View, FlatList } from 'react-native';
+import { View, FlatList, Alert } from 'react-native';
 import React, { useEffect, useState } from 'react';
 //realM
 import Realm from 'realm';
 //model
 import { Contact } from '../model/Contact';
 //db
-import { addContact, getRealm } from '../db/realm';
+import { addContact, deleteContact, getRealm } from '../db/realm';
 //components
 import ContactCard from '../components/ContactCard/ContactCard';
 import InputContact from '../components/InputContactCard/InputContact';
 import FloatingButton from '../components/FloatingButton/FloatingButton';
 //data func
 import { fetchContact } from '../data/ContactsData';
+//Edit component
+import EditModal from '../components/EditModel/EditModel';
 //Toast
 import Toast from 'react-native-toast-message';
 
@@ -22,8 +24,14 @@ const HomeScreen = (props: Props) => {
   const [contacts, setContacts] = useState<Contact[]>([]);
   //useState to show and hide add model
   const [showInput, setShowInput] = useState(false);
+  //useState to show and hide Edit model
+  const [showEditModel, setShowEditModel] = useState(false);
   //RealM state
   const [realmInstance, setRealmInstance] = useState<Realm | null>(null);
+  //edit fields
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
 
   useEffect(() => {
     let realm: Realm;
@@ -32,7 +40,6 @@ const HomeScreen = (props: Props) => {
     const loadData = async () => {
       try {
         realm = await getRealm();
-
         // seed / insert initial data
         fetchContact(realm);
         //setting RealM instance for state
@@ -76,6 +83,30 @@ const HomeScreen = (props: Props) => {
     });
   }
 
+  //function to handle delete
+  function handleDelete(contact: Contact) {
+    Alert.alert('Delete Contact', `Delete ${contact.firstName}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          if (!realmInstance) return;
+          deleteContact(realmInstance, contact._id);
+          showToast('error', 'Deleted');
+        },
+      },
+    ]);
+  }
+
+  //function to hanlde edit
+  function handleEdit(contact: Contact) {
+    setShowEditModel(!showEditModel);
+    setSelectedContact(contact);
+    setFirstName(contact.firstName);
+    setLastName(contact.lastName);
+  }
+
   return (
     <View style={{ flex: 1 }}>
       <FlatList
@@ -84,13 +115,22 @@ const HomeScreen = (props: Props) => {
         renderItem={({ item }) => (
           <ContactCard
             contact={item}
-            onPress={() =>
-              showToast('info', item.firstName + ' ' + item.lastName)
-            }
-            onCallPress={contact => console.log('Call', contact)}
+            onPress={() => handleEdit(item)}
+            onDelete={() => handleDelete(item)}
           />
         )}
       />
+      {showEditModel && (
+        <EditModal
+          visible={showEditModel}
+          onCancel={() => setShowEditModel(!showEditModel)}
+          firstName={firstName}
+          lastName={lastName}
+          onChangeFirstName={setFirstName}
+          onChangeLastName={setLastName}
+          onUpdate={() => showToast('success', 'Yay ! Update button works')}
+        />
+      )}
       {showInput && (
         <InputContact
           onAdd={data => {
