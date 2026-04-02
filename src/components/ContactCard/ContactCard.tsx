@@ -1,7 +1,14 @@
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+} from 'react-native';
 import React from 'react';
 import { Contact } from '../../model/Contact';
-//icons
+import { Swipeable } from 'react-native-gesture-handler';
 
 type Props = {
   contact: Contact;
@@ -10,29 +17,48 @@ type Props = {
 };
 
 const ContactCard = ({ contact, onPress, onCallPress }: Props) => {
-  return (
-    <TouchableOpacity
-      activeOpacity={0.6}
-      style={styles.container}
-      onPress={() => onPress?.(contact)}
-    >
-      {/* User image */}
-      <Image source={{ uri: contact.profileImageUrl }} style={styles.avatar} />
-      {/* Info First and last name */}
-      <View style={styles.info}>
-        <Text style={styles.name}>
-          {contact.firstName} {contact.lastName}
-        </Text>
-        <Text style={styles.phone}>{contact.phone}</Text>
-      </View>
-      {/* Action */}
+  const renderRightActions = () => {
+    return (
       <TouchableOpacity
-        onPress={() => onCallPress?.(contact)}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        style={styles.deleteBox}
+        onPress={() => {
+          Alert.alert('Delete Contact', `Delete ${contact.firstName}?`, [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Delete',
+              style: 'destructive',
+              onPress: () => onCallPress?.(contact),
+            },
+          ]);
+        }}
       >
-        <Text> 🗑️ </Text>
+        <Text style={styles.deleteText}>Delete</Text>
       </TouchableOpacity>
-    </TouchableOpacity>
+    );
+  };
+
+  return (
+    <Swipeable renderRightActions={renderRightActions}>
+      <TouchableOpacity
+        activeOpacity={0.6}
+        style={styles.container}
+        onPress={() => onPress?.(contact)}
+      >
+        {/* User image */}
+        <Image
+          source={{ uri: contact.profileImageUrl }}
+          style={styles.avatar}
+        />
+
+        {/* Info */}
+        <View style={styles.info}>
+          <Text style={styles.name}>
+            {contact.firstName} {contact.lastName}
+          </Text>
+          <Text style={styles.phone}>{contact.phone}</Text>
+        </View>
+      </TouchableOpacity>
+    </Swipeable>
   );
 };
 
@@ -45,8 +71,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     backgroundColor: '#fff',
-
-    // subtle divider
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#E5E5EA',
   },
@@ -56,11 +80,6 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     marginRight: 12,
-  },
-
-  initials: {
-    color: '#fff',
-    fontWeight: '600',
   },
 
   info: {
@@ -78,9 +97,17 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     marginTop: 2,
   },
+
+  deleteBox: {
+    backgroundColor: '#FF3B30',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    height: '100%',
+  },
+
   deleteText: {
-    fontSize: 14,
-    color: '#FF3B30', // iOS-style red
-    fontWeight: '500',
+    color: '#fff',
+    fontWeight: '600',
   },
 });
