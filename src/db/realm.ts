@@ -18,14 +18,13 @@ export const getRealm = async () => {
 //function to enter new contact in db
 export const addContact = (realM: Realm, data: ContactInput) => {
   //radnom image genrator
-  const randomImage = `https://i.pravatar.cc/200?img=${Math.floor(
-    Math.random() * 70,
-  )}`;
+  const random = Math.floor(Math.random() * 100);
+  const avatar = `https://randomuser.me/api/portraits/men/${random}.jpg`;
   //write it in DB
   realM.write(() => {
     realM.create('Contact', {
       _id: new BSON.ObjectId(),
-      profileImageUrl: randomImage,
+      profileImageUrl: avatar,
       firstName: data.firstName,
       lastName: data.lastName,
       phone: data.phone,

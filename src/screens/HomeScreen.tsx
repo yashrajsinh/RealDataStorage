@@ -84,7 +84,9 @@ const HomeScreen = (props: Props) => {
         renderItem={({ item }) => (
           <ContactCard
             contact={item}
-            onPress={() => showToast('info', item.firstName + item.lastName)}
+            onPress={() =>
+              showToast('info', item.firstName + ' ' + item.lastName)
+            }
             onCallPress={contact => console.log('Call', contact)}
           />
         )}
