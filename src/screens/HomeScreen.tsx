@@ -5,7 +5,7 @@ import Realm from 'realm';
 //model
 import { Contact } from '../model/Contact';
 //db
-import { addContact, deleteContact, getRealm } from '../db/realm';
+import { addContact, deleteContact, getRealm, editContact } from '../db/realm';
 //components
 import ContactCard from '../components/ContactCard/ContactCard';
 import InputContact from '../components/InputContactCard/InputContact';
@@ -128,7 +128,15 @@ const HomeScreen = (props: Props) => {
           lastName={lastName}
           onChangeFirstName={setFirstName}
           onChangeLastName={setLastName}
-          onUpdate={() => showToast('success', 'Yay ! Update button works')}
+          onUpdate={() => {
+            if (!realmInstance || !selectedContact) return;
+            editContact(realmInstance, selectedContact._id, {
+              firstName,
+              lastName,
+            });
+            showToast('success', 'Updated');
+            setShowEditModel(false);
+          }}
         />
       )}
       {showInput && (
