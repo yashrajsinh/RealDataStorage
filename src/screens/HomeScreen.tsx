@@ -108,7 +108,7 @@ const HomeScreen = (props: Props) => {
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#F2F2F7' }}>
       <FlatList
         data={contacts}
         keyExtractor={item => item._id.toHexString()}

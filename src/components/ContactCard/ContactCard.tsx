@@ -1,5 +1,5 @@
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import React from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Contact } from '../../model/Contact';
 import { Swipeable } from 'react-native-gesture-handler';
 
@@ -24,15 +24,17 @@ const ContactCard = ({ contact, onPress, onDelete }: Props) => {
   return (
     <Swipeable renderRightActions={renderRightActions} overshootRight={false}>
       <TouchableOpacity
-        activeOpacity={0.6}
-        style={styles.container}
+        activeOpacity={0.7}
+        style={styles.card}
         onPress={() => onPress?.(contact)}
       >
+        {/* Avatar */}
         <Image
           source={{ uri: contact.profileImageUrl }}
           style={styles.avatar}
         />
 
+        {/* Info */}
         <View style={styles.info}>
           <Text style={styles.name}>
             {contact.firstName} {contact.lastName}
@@ -45,25 +47,43 @@ const ContactCard = ({ contact, onPress, onDelete }: Props) => {
 };
 
 export default ContactCard;
-
 const styles = StyleSheet.create({
-  container: {
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#fff',
 
-    // iOS divider
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5EA',
+    marginHorizontal: 8,
+    marginVertical: 3,
+    padding: 12,
+
+    backgroundColor: '#fff',
+    borderRadius: 14,
+
+    // iOS shadow
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+
+    // Android shadow
+    elevation: 3,
   },
 
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
+    width: 70,
+    height: 70,
+    borderRadius: 36,
+    marginRight: 14,
+
+    // border
+    borderWidth: 2,
+    borderColor: '#fff',
+
+    // subtle shadow for avatar
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
   },
 
   info: {
@@ -71,22 +91,25 @@ const styles = StyleSheet.create({
   },
 
   name: {
-    fontSize: 17,
+    fontSize: 19,
+    fontWeight: '600',
     color: '#000',
   },
 
   phone: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#8E8E93',
-    marginTop: 2,
+    marginTop: 4,
   },
 
   deleteBox: {
     backgroundColor: '#FF3B30',
     justifyContent: 'center',
     alignItems: 'center',
-    width: 80,
-    height: '100%',
+    width: 90,
+    height: '90%',
+    marginVertical: 6,
+    borderRadius: 14,
   },
 
   deleteText: {

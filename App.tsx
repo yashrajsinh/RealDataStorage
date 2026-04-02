@@ -14,7 +14,7 @@ import HomeScreen from './src/screens/HomeScreen';
 function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
+      <SafeAreaProvider style={{ backgroundColor: '#F2F2F7' }}>
         <SafeAreaView style={{ flex: 1 }}>
           <HomeScreen />
         </SafeAreaView>
