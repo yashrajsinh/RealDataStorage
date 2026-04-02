@@ -31,7 +31,7 @@ const EditModal = ({
   onCancel,
 }: Props) => {
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal visible={visible} transparent animationType="slide">
       <View style={styles.overlay}>
         <View style={styles.container}>
           <Text style={styles.title}>Edit Contact</Text>

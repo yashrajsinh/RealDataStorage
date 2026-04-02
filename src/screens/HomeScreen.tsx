@@ -28,6 +28,10 @@ const HomeScreen = (props: Props) => {
   const [showEditModel, setShowEditModel] = useState(false);
   //RealM state
   const [realmInstance, setRealmInstance] = useState<Realm | null>(null);
+  //edit fields
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
 
   useEffect(() => {
     let realm: Realm;
@@ -88,12 +92,19 @@ const HomeScreen = (props: Props) => {
         style: 'destructive',
         onPress: () => {
           if (!realmInstance) return;
-
           deleteContact(realmInstance, contact._id);
           showToast('error', 'Deleted');
         },
       },
     ]);
+  }
+
+  //function to hanlde edit
+  function handleEdit(contact: Contact) {
+    setShowEditModel(!showEditModel);
+    setSelectedContact(contact);
+    setFirstName(contact.firstName);
+    setLastName(contact.lastName);
   }
 
   return (
@@ -104,7 +115,7 @@ const HomeScreen = (props: Props) => {
         renderItem={({ item }) => (
           <ContactCard
             contact={item}
-            onPress={() => setShowEditModel(!showEditModel)}
+            onPress={() => handleEdit(item)}
             onDelete={() => handleDelete(item)}
           />
         )}
@@ -113,6 +124,11 @@ const HomeScreen = (props: Props) => {
         <EditModal
           visible={showEditModel}
           onCancel={() => setShowEditModel(!showEditModel)}
+          firstName={firstName}
+          lastName={lastName}
+          onChangeFirstName={setFirstName}
+          onChangeLastName={setLastName}
+          onUpdate={() => showToast('success', 'Yay ! Update button works')}
         />
       )}
       {showInput && (
