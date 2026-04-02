@@ -1,14 +1,14 @@
 import Realm from 'realm';
 import { Contact } from '../model/Contact';
+//BSON reference
+import { BSON } from 'realm';
+
 type ContactInput = {
   firstName: string;
   lastName: string;
   phone: string;
 };
-
-//BSON reference
-import { BSON } from 'realm';
-
+//func to assign schema
 export const getRealm = async () => {
   return await Realm.open({
     schema: [Contact],
@@ -29,5 +29,15 @@ export const addContact = (realM: Realm, data: ContactInput) => {
       lastName: data.lastName,
       phone: data.phone,
     });
+  });
+};
+//delete function
+export const deleteContact = (realM: Realm, contactId: BSON.ObjectId) => {
+  realM.write(() => {
+    const contact = realM.objectForPrimaryKey('Contact', contactId);
+    //if contact exists delete
+    if (contact) {
+      realM.delete(contact);
+    }
   });
 };

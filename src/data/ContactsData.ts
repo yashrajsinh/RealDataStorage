@@ -1,7 +1,7 @@
 import Realm from 'realm';
 import { Contact } from '../model/Contact';
 import { BSON } from 'realm';
-
+//func to add dummy contacts
 export const fetchContact = (realm: Realm) => {
   const existing = realm.objects<Contact>('Contact');
   if (existing.length === 0) {
