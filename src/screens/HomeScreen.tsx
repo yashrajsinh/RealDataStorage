@@ -9,9 +9,11 @@ import { getRealm } from '../db/realm';
 //components
 import ContactCard from '../components/ContactCard/ContactCard';
 import InputContact from '../components/InputContactCard/InputContact';
+import FloatingButton from '../components/FloatingButton/FloatingButton';
 //data func
 import { fetchContact } from '../data/ContactsData';
-import FloatingButton from '../components/FloatingButton/FloatingButton';
+//Toast
+import Toast from 'react-native-toast-message';
 
 type Props = {};
 
@@ -36,6 +38,7 @@ const HomeScreen = (props: Props) => {
         data = realm.objects<Contact>('Contact');
 
         setContacts([...data]);
+        showToast('success', 'Data sync sucessfully');
       } catch (e) {
         console.debug(e);
       }
@@ -61,6 +64,14 @@ const HomeScreen = (props: Props) => {
     };
   }, []);
 
+  function showToast(type: string, message: string) {
+    Toast.show({
+      type: type,
+      text1: message,
+      position: 'bottom',
+    });
+  }
+
   return (
     <View style={{ flex: 1 }}>
       <FlatList
@@ -69,7 +80,7 @@ const HomeScreen = (props: Props) => {
         renderItem={({ item }) => (
           <ContactCard
             contact={item}
-            onPress={contact => console.log('Open', contact)}
+            onPress={() => showToast('success', item.firstName + item.lastName)}
             onCallPress={contact => console.log('Call', contact)}
           />
         )}
@@ -86,6 +97,7 @@ const HomeScreen = (props: Props) => {
         />
       )}
       <FloatingButton onPress={() => setShowInput(!showInput)} />
+      <Toast />
     </View>
   );
 };
