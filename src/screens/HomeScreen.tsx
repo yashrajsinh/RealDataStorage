@@ -12,7 +12,8 @@ import InputContact from '../components/InputContactCard/InputContact';
 import FloatingButton from '../components/FloatingButton/FloatingButton';
 //data func
 import { fetchContact } from '../data/ContactsData';
-
+//Edit component
+import EditModal from '../components/EditModel/EditModel';
 //Toast
 import Toast from 'react-native-toast-message';
 
@@ -23,6 +24,8 @@ const HomeScreen = (props: Props) => {
   const [contacts, setContacts] = useState<Contact[]>([]);
   //useState to show and hide add model
   const [showInput, setShowInput] = useState(false);
+  //useState to show and hide Edit model
+  const [showEditModel, setShowEditModel] = useState(false);
   //RealM state
   const [realmInstance, setRealmInstance] = useState<Realm | null>(null);
 
@@ -33,7 +36,6 @@ const HomeScreen = (props: Props) => {
     const loadData = async () => {
       try {
         realm = await getRealm();
-
         // seed / insert initial data
         fetchContact(realm);
         //setting RealM instance for state
@@ -102,13 +104,17 @@ const HomeScreen = (props: Props) => {
         renderItem={({ item }) => (
           <ContactCard
             contact={item}
-            onPress={() =>
-              showToast('info', item.firstName + ' ' + item.lastName)
-            }
+            onPress={() => setShowEditModel(!showEditModel)}
             onDelete={() => handleDelete(item)}
           />
         )}
       />
+      {showEditModel && (
+        <EditModal
+          visible={showEditModel}
+          onCancel={() => setShowEditModel(!showEditModel)}
+        />
+      )}
       {showInput && (
         <InputContact
           onAdd={data => {
