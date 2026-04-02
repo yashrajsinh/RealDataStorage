@@ -1,35 +1,43 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Contact } from '../../model/Contact';
 import { Swipeable } from 'react-native-gesture-handler';
 
+//BSON reference
+import { BSON } from 'realm';
 type Props = {
   contact: Contact;
   onPress?: (contact: Contact) => void;
-  onDelete?: (contact: Contact) => void;
+  onDelete?: (id: BSON.ObjectId) => void;
 };
 
 const ContactCard = ({ contact, onPress, onDelete }: Props) => {
+  const swipeableRef = useRef<Swipeable>(null);
+
+  if (!contact.isValid()) return null;
   const isOnline = Math.random() > 0.4;
+
+  const handleDelete = () => {
+    // Close the swipeable first, then delete
+    swipeableRef.current?.close();
+    onDelete?.(contact._id);
+  };
 
   const renderRightActions = () => {
     return (
-      <TouchableOpacity
-        style={styles.deleteBox}
-        onPress={() => onDelete?.(contact)}
-      >
+      <TouchableOpacity style={styles.deleteBox} onPress={handleDelete}>
         <Text style={styles.deleteText}>Delete</Text>
       </TouchableOpacity>
     );
   };
 
   return (
-    <Swipeable renderRightActions={renderRightActions} overshootRight={false}>
-      <TouchableOpacity
-        activeOpacity={0.6}
-        style={styles.card}
-        onPress={() => onPress?.(contact)}
-      >
+    <Swipeable
+      ref={swipeableRef}
+      renderRightActions={renderRightActions}
+      overshootRight={false}
+    >
+      <TouchableOpacity style={styles.card} onPress={() => onPress?.(contact)}>
         {/* Avatar + Status */}
         <View style={styles.avatarContainer}>
           <Image
