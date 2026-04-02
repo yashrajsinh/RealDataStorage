@@ -10,8 +10,7 @@ type Props = {
 };
 
 const ContactCard = ({ contact, onPress, onDelete }: Props) => {
-  // stable "random" online status based on id
-  const isOnline = Math.random() > 0.2;
+  const isOnline = Math.random() > 0.4;
 
   const renderRightActions = () => {
     return (
@@ -27,7 +26,7 @@ const ContactCard = ({ contact, onPress, onDelete }: Props) => {
   return (
     <Swipeable renderRightActions={renderRightActions} overshootRight={false}>
       <TouchableOpacity
-        activeOpacity={0.7}
+        activeOpacity={0.6}
         style={styles.card}
         onPress={() => onPress?.(contact)}
       >
@@ -55,58 +54,48 @@ const ContactCard = ({ contact, onPress, onDelete }: Props) => {
           </Text>
           <Text style={styles.phone}>{contact.phone}</Text>
         </View>
+
+        {/* iOS Chevron */}
+        <Text style={styles.chevron}>{'>'}</Text>
       </TouchableOpacity>
     </Swipeable>
   );
 };
 
 export default ContactCard;
+
 const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
 
-    marginHorizontal: 8,
-    marginVertical: 3,
-    padding: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
 
     backgroundColor: '#fff',
-    borderRadius: 14,
 
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-
-    elevation: 3,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E5EA',
   },
 
   avatarContainer: {
     position: 'relative',
-    marginRight: 14,
+    marginRight: 12,
   },
 
   avatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-
-    borderWidth: 2,
-    borderColor: '#fff',
-
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
+    width: 50,
+    height: 50,
+    borderRadius: 25,
   },
 
   statusDot: {
     position: 'absolute',
-    bottom: 4,
-    right: 4,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    bottom: 3,
+    right: 3,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
 
     borderWidth: 2,
     borderColor: '#fff',
@@ -117,25 +106,27 @@ const styles = StyleSheet.create({
   },
 
   name: {
-    fontSize: 19,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '500',
     color: '#000',
   },
 
   phone: {
-    fontSize: 15,
+    fontSize: 13,
     color: '#8E8E93',
-    marginTop: 4,
+    marginTop: 2,
+  },
+
+  chevron: {
+    fontSize: 18,
+    color: '#C7C7CC',
   },
 
   deleteBox: {
     backgroundColor: '#FF3B30',
     justifyContent: 'center',
     alignItems: 'center',
-    width: 90,
-    height: '90%',
-    marginVertical: 6,
-    borderRadius: 14,
+    width: 80,
   },
 
   deleteText: {
