@@ -1,6 +1,6 @@
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import React from 'react';
-import { Contact } from '../model/Contact';
+import { Contact } from '../../model/Contact';
 
 type Props = {
   contact: Contact;
@@ -17,7 +17,7 @@ const ContactCard = ({ contact, onPress, onCallPress }: Props) => {
       style={styles.container}
       onPress={() => onPress?.(contact)}
     >
-      {/* Avatar */}
+      {/* User image */}
       {contact.profileImageUrl ? (
         <Image
           source={{ uri: contact.profileImageUrl }}
@@ -29,7 +29,7 @@ const ContactCard = ({ contact, onPress, onCallPress }: Props) => {
         </View>
       )}
 
-      {/* Info */}
+      {/* Info First and last name */}
       <View style={styles.info}>
         <Text style={styles.name}>
           {contact.firstName} {contact.lastName}

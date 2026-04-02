@@ -7,14 +7,20 @@ import { Contact } from '../model/Contact';
 //db
 import { getRealm } from '../db/realm';
 //components
-import ContactCard from '../components/ContactCard';
+import ContactCard from '../components/ContactCard/ContactCard';
+import InputContact from '../components/InputContactCard/InputContact';
 //data func
 import { fetchContact } from '../data/ContactsData';
+import FloatingButton from '../components/FloatingButton/FloatingButton';
+
 type Props = {};
 
 const HomeScreen = (props: Props) => {
   //contact obj
   const [contacts, setContacts] = useState<Contact[]>([]);
+  //useState to show and hide add model
+  const [showInput, setShowInput] = useState(false);
+
   useEffect(() => {
     let realm: Realm;
     let data: Realm.Results<Contact>;
@@ -68,6 +74,18 @@ const HomeScreen = (props: Props) => {
           />
         )}
       />
+      {showInput && (
+        <InputContact
+          onAdd={() => {
+            console.debug('add');
+            setShowInput(!showInput);
+          }}
+          onCancel={() => {
+            setShowInput(false);
+          }}
+        />
+      )}
+      <FloatingButton onPress={() => setShowInput(!showInput)} />
     </View>
   );
 };
