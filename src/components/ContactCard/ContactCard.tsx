@@ -3,24 +3,23 @@ import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Contact } from '../../model/Contact';
 import { Swipeable } from 'react-native-gesture-handler';
 
-//BSON reference
-import { BSON } from 'realm';
 type Props = {
   contact: Contact;
   onPress?: (contact: Contact) => void;
-  onDelete?: (id: BSON.ObjectId) => void;
+  index?: number;
+  onDelete?: (index: number) => void;
 };
 
-const ContactCard = ({ contact, onPress, onDelete }: Props) => {
+const ContactCard = ({ contact, onPress, onDelete, index }: Props) => {
   const swipeableRef = useRef<Swipeable>(null);
 
   if (!contact.isValid()) return null;
   const isOnline = Math.random() > 0.4;
 
   const handleDelete = () => {
-    // Close the swipeable first, then delete
+    // Close swipeable, wait animation, then notify parent
     swipeableRef.current?.close();
-    onDelete?.(contact._id);
+    setTimeout(() => onDelete?.(index!), 250);
   };
 
   const renderRightActions = () => {

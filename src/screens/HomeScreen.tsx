@@ -87,16 +87,24 @@ const HomeScreen = (props: Props) => {
   }
 
   //function to handle delete
-  function handleDelete(contactId: BSON.ObjectId) {
+  function handleDelete(index: number) {
     Alert.alert('Delete Contact', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
         style: 'destructive',
         onPress: () => {
-          if (!realmInstance) return;
-          deleteContact(realmInstance, contactId);
-          showToast('error', 'Deleted');
+          // Optimistic UI update first
+          setContacts(prev => prev.filter((_, i) => i !== index));
+
+          // DB delete after render
+          setTimeout(() => {
+            const targetId = contacts[index]?._id;
+            if (realmInstance && targetId) {
+              deleteContact(realmInstance, targetId);
+            }
+          }, 100);
+          showToast('success', 'Deleted');
         },
       },
     ]);
@@ -119,13 +127,13 @@ const HomeScreen = (props: Props) => {
         data={contacts}
         extraData={contacts}
         keyExtractor={item => item._id.toHexString()}
-        renderItem={({ item }) => {
-          if (!item.isValid()) return null; // ← add this
+        renderItem={({ item, index }) => {
+          if (!item.isValid()) return null; //return if delete
           return (
             <ContactCard
               contact={item}
               onPress={() => handleEdit(item)}
-              onDelete={() => handleDelete(item._id)}
+              onDelete={() => handleDelete(index)}
             />
           );
         }}
