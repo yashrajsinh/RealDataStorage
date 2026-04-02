@@ -5,17 +5,21 @@
  * @format
  */
 
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
 //screen
 import HomeScreen from './src/screens/HomeScreen';
 function App() {
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1 }}>
-        <HomeScreen />
-      </SafeAreaView>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <SafeAreaView style={{ flex: 1 }}>
+          <HomeScreen />
+        </SafeAreaView>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 const styles = StyleSheet.create({
