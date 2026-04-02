@@ -5,7 +5,7 @@ import Realm from 'realm';
 //model
 import { Contact } from '../model/Contact';
 //db
-import { getRealm } from '../db/realm';
+import { addContact, getRealm } from '../db/realm';
 //components
 import ContactCard from '../components/ContactCard/ContactCard';
 import InputContact from '../components/InputContactCard/InputContact';
@@ -22,6 +22,8 @@ const HomeScreen = (props: Props) => {
   const [contacts, setContacts] = useState<Contact[]>([]);
   //useState to show and hide add model
   const [showInput, setShowInput] = useState(false);
+  //RealM state
+  const [realmInstance, setRealmInstance] = useState<Realm | null>(null);
 
   useEffect(() => {
     let realm: Realm;
@@ -33,6 +35,8 @@ const HomeScreen = (props: Props) => {
 
         // seed / insert initial data
         fetchContact(realm);
+        //setting RealM instance for state
+        setRealmInstance(realm);
 
         // get data
         data = realm.objects<Contact>('Contact');
@@ -80,15 +84,18 @@ const HomeScreen = (props: Props) => {
         renderItem={({ item }) => (
           <ContactCard
             contact={item}
-            onPress={() => showToast('success', item.firstName + item.lastName)}
+            onPress={() => showToast('info', item.firstName + item.lastName)}
             onCallPress={contact => console.log('Call', contact)}
           />
         )}
       />
       {showInput && (
         <InputContact
-          onAdd={() => {
-            console.debug('add');
+          onAdd={data => {
+            if (realmInstance) {
+              addContact(realmInstance, data);
+              showToast('success', 'Added ' + data.firstName);
+            }
             setShowInput(!showInput);
           }}
           onCancel={() => {
