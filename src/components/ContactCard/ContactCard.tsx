@@ -1,44 +1,70 @@
+import React, { useRef } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import React from 'react';
 import { Contact } from '../../model/Contact';
 import { Swipeable } from 'react-native-gesture-handler';
 
+//BSON reference
+import { BSON } from 'realm';
 type Props = {
   contact: Contact;
   onPress?: (contact: Contact) => void;
-  onDelete?: (contact: Contact) => void;
+  onDelete?: (id: BSON.ObjectId) => void;
 };
 
 const ContactCard = ({ contact, onPress, onDelete }: Props) => {
+  const swipeableRef = useRef<Swipeable>(null);
+
+  if (!contact.isValid()) return null;
+  const isOnline = Math.random() > 0.4;
+
+  const handleDelete = () => {
+    // Close the swipeable first, then delete
+    swipeableRef.current?.close();
+    onDelete?.(contact._id);
+  };
+
   const renderRightActions = () => {
     return (
-      <TouchableOpacity
-        style={styles.deleteBox}
-        onPress={() => onDelete?.(contact)}
-      >
+      <TouchableOpacity style={styles.deleteBox} onPress={handleDelete}>
         <Text style={styles.deleteText}>Delete</Text>
       </TouchableOpacity>
     );
   };
 
   return (
-    <Swipeable renderRightActions={renderRightActions} overshootRight={false}>
-      <TouchableOpacity
-        activeOpacity={0.6}
-        style={styles.container}
-        onPress={() => onPress?.(contact)}
-      >
-        <Image
-          source={{ uri: contact.profileImageUrl }}
-          style={styles.avatar}
-        />
+    <Swipeable
+      ref={swipeableRef}
+      renderRightActions={renderRightActions}
+      overshootRight={false}
+    >
+      <TouchableOpacity style={styles.card} onPress={() => onPress?.(contact)}>
+        {/* Avatar + Status */}
+        <View style={styles.avatarContainer}>
+          <Image
+            source={{ uri: contact.profileImageUrl }}
+            style={styles.avatar}
+          />
 
+          <View
+            style={[
+              styles.statusDot,
+              {
+                backgroundColor: isOnline ? '#34C759' : '#C7C7CC',
+              },
+            ]}
+          />
+        </View>
+
+        {/* Info */}
         <View style={styles.info}>
           <Text style={styles.name}>
             {contact.firstName} {contact.lastName}
           </Text>
           <Text style={styles.phone}>{contact.phone}</Text>
         </View>
+
+        {/* iOS Chevron */}
+        <Text style={styles.chevron}>{'>'}</Text>
       </TouchableOpacity>
     </Swipeable>
   );
@@ -47,23 +73,40 @@ const ContactCard = ({ contact, onPress, onDelete }: Props) => {
 export default ContactCard;
 
 const styles = StyleSheet.create({
-  container: {
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+
+    paddingVertical: 10,
     paddingHorizontal: 16,
+
     backgroundColor: '#fff',
 
-    // iOS divider
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#E5E5EA',
   },
 
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  avatarContainer: {
+    position: 'relative',
     marginRight: 12,
+  },
+
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+
+  statusDot: {
+    position: 'absolute',
+    bottom: 3,
+    right: 3,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+
+    borderWidth: 2,
+    borderColor: '#fff',
   },
 
   info: {
@@ -72,6 +115,7 @@ const styles = StyleSheet.create({
 
   name: {
     fontSize: 17,
+    fontWeight: '500',
     color: '#000',
   },
 
@@ -81,12 +125,16 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
+  chevron: {
+    fontSize: 18,
+    color: '#C7C7CC',
+  },
+
   deleteBox: {
     backgroundColor: '#FF3B30',
     justifyContent: 'center',
     alignItems: 'center',
     width: 80,
-    height: '100%',
   },
 
   deleteText: {

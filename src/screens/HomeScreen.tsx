@@ -1,4 +1,4 @@
-import { View, FlatList, Alert } from 'react-native';
+import { View, FlatList, Alert, StyleSheet, Text } from 'react-native';
 import React, { useEffect, useState } from 'react';
 //realM
 import Realm from 'realm';
@@ -16,6 +16,8 @@ import { fetchContact } from '../data/ContactsData';
 import EditModal from '../components/EditModel/EditModel';
 //Toast
 import Toast from 'react-native-toast-message';
+//BSON reference
+import { BSON } from 'realm';
 
 type Props = {};
 
@@ -29,7 +31,8 @@ const HomeScreen = (props: Props) => {
   //RealM state
   const [realmInstance, setRealmInstance] = useState<Realm | null>(null);
   //edit fields
-  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [selectedContactId, setSelectedContactId] =
+    useState<BSON.ObjectId | null>(null);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
 
@@ -84,15 +87,15 @@ const HomeScreen = (props: Props) => {
   }
 
   //function to handle delete
-  function handleDelete(contact: Contact) {
-    Alert.alert('Delete Contact', `Delete ${contact.firstName}?`, [
+  function handleDelete(contactId: BSON.ObjectId) {
+    Alert.alert('Delete Contact', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
         style: 'destructive',
         onPress: () => {
           if (!realmInstance) return;
-          deleteContact(realmInstance, contact._id);
+          deleteContact(realmInstance, contactId);
           showToast('error', 'Deleted');
         },
       },
@@ -102,23 +105,30 @@ const HomeScreen = (props: Props) => {
   //function to hanlde edit
   function handleEdit(contact: Contact) {
     setShowEditModel(!showEditModel);
-    setSelectedContact(contact);
+    setSelectedContactId(contact._id);
     setFirstName(contact.firstName);
     setLastName(contact.lastName);
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#F2F2F7' }}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Contacts</Text>
+      </View>
       <FlatList
         data={contacts}
+        extraData={contacts}
         keyExtractor={item => item._id.toHexString()}
-        renderItem={({ item }) => (
-          <ContactCard
-            contact={item}
-            onPress={() => handleEdit(item)}
-            onDelete={() => handleDelete(item)}
-          />
-        )}
+        renderItem={({ item }) => {
+          if (!item.isValid()) return null; // ← add this
+          return (
+            <ContactCard
+              contact={item}
+              onPress={() => handleEdit(item)}
+              onDelete={() => handleDelete(item._id)}
+            />
+          );
+        }}
       />
       {showEditModel && (
         <EditModal
@@ -129,8 +139,8 @@ const HomeScreen = (props: Props) => {
           onChangeFirstName={setFirstName}
           onChangeLastName={setLastName}
           onUpdate={() => {
-            if (!realmInstance || !selectedContact) return;
-            editContact(realmInstance, selectedContact._id, {
+            if (!realmInstance || !selectedContactId) return;
+            editContact(realmInstance, selectedContactId, {
               firstName,
               lastName,
             });
@@ -160,3 +170,18 @@ const HomeScreen = (props: Props) => {
 };
 
 export default HomeScreen;
+
+const styles = StyleSheet.create({
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    backgroundColor: '#F2F2F7',
+  },
+
+  title: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#000',
+  },
+});
