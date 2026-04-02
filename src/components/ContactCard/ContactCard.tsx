@@ -10,6 +10,9 @@ type Props = {
 };
 
 const ContactCard = ({ contact, onPress, onDelete }: Props) => {
+  // stable "random" online status based on id
+  const isOnline = Math.random() > 0.2;
+
   const renderRightActions = () => {
     return (
       <TouchableOpacity
@@ -28,11 +31,22 @@ const ContactCard = ({ contact, onPress, onDelete }: Props) => {
         style={styles.card}
         onPress={() => onPress?.(contact)}
       >
-        {/* Avatar */}
-        <Image
-          source={{ uri: contact.profileImageUrl }}
-          style={styles.avatar}
-        />
+        {/* Avatar + Status */}
+        <View style={styles.avatarContainer}>
+          <Image
+            source={{ uri: contact.profileImageUrl }}
+            style={styles.avatar}
+          />
+
+          <View
+            style={[
+              styles.statusDot,
+              {
+                backgroundColor: isOnline ? '#34C759' : '#C7C7CC',
+              },
+            ]}
+          />
+        </View>
 
         {/* Info */}
         <View style={styles.info}>
@@ -59,31 +73,43 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 14,
 
-    // iOS shadow
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
 
-    // Android shadow
     elevation: 3,
+  },
+
+  avatarContainer: {
+    position: 'relative',
+    marginRight: 14,
   },
 
   avatar: {
     width: 70,
     height: 70,
-    borderRadius: 36,
-    marginRight: 14,
+    borderRadius: 35,
 
-    // border
     borderWidth: 2,
     borderColor: '#fff',
 
-    // subtle shadow for avatar
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
+  },
+
+  statusDot: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+
+    borderWidth: 2,
+    borderColor: '#fff',
   },
 
   info: {

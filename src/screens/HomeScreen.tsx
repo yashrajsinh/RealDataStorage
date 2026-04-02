@@ -1,4 +1,4 @@
-import { View, FlatList, Alert } from 'react-native';
+import { View, FlatList, Alert, StyleSheet, Text } from 'react-native';
 import React, { useEffect, useState } from 'react';
 //realM
 import Realm from 'realm';
@@ -109,6 +109,9 @@ const HomeScreen = (props: Props) => {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F2F2F7' }}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Contacts</Text>
+      </View>
       <FlatList
         data={contacts}
         keyExtractor={item => item._id.toHexString()}
@@ -160,3 +163,18 @@ const HomeScreen = (props: Props) => {
 };
 
 export default HomeScreen;
+
+const styles = StyleSheet.create({
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    backgroundColor: '#F2F2F7',
+  },
+
+  title: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#000',
+  },
+});
