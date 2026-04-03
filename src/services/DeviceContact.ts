@@ -1,10 +1,7 @@
 import Contacts from 'react-native-contacts';
 import { Contact } from '../model/Contact';
-import Realm from 'realm';
-//BSON reference
-import { BSON } from 'realm';
+import Realm, { BSON } from 'realm';
 
-//helper
 const normalizePhone = (phone: string) => {
   return phone.replace(/\D/g, '');
 };
@@ -13,15 +10,30 @@ export const getDeviceContacts = async (realm: Realm) => {
   try {
     const deviceContacts = await Contacts.getAll();
 
-    const deviceMap = new Map();
+    const deviceMap = new Map<
+      string,
+      {
+        deviceContactId: string;
+        firstName: string;
+        lastName: string;
+        phone: string;
+        profileImageUrl: string;
+      }
+    >();
 
+    // =====================
+    // BUILD DEVICE MAP (KEY = recordID)
+    // =====================
     deviceContacts.forEach(contact => {
-      const rawPhone = contact.phoneNumbers[0]?.number;
+      if (!contact.phoneNumbers || contact.phoneNumbers.length === 0) return;
+
+      const rawPhone = contact.phoneNumbers[0].number;
       if (!rawPhone) return;
 
       const phone = normalizePhone(rawPhone);
 
-      deviceMap.set(phone, {
+      deviceMap.set(contact.recordID, {
+        deviceContactId: contact.recordID,
         firstName: contact.givenName || '',
         lastName: contact.familyName || '',
         phone,
@@ -33,35 +45,75 @@ export const getDeviceContacts = async (realm: Realm) => {
     });
 
     realm.write(() => {
-      const realmContacts = realm.objects<Contact>('Contact');
+      const realmContacts = [...realm.objects<Contact>('Contact')];
 
-      // DELETE
+      // =====================
+      // DELETE (SAFE)
+      // =====================
+      const toDelete: Contact[] = [];
+
       realmContacts.forEach(rc => {
-        const normalized = normalizePhone(rc.phone);
-        if (!deviceMap.has(normalized)) {
-          realm.delete(rc);
+        if (!rc.isValid()) return;
+
+        if (rc.deviceContactId) {
+          if (!deviceMap.has(rc.deviceContactId)) {
+            toDelete.push(rc);
+          }
+        } else {
+          // fallback for old local contacts (no device ID)
+          const normalized = normalizePhone(rc.phone);
+
+          const exists = Array.from(deviceMap.values()).some(
+            dc => dc.phone === normalized,
+          );
+
+          if (!exists) {
+            toDelete.push(rc);
+          }
         }
       });
 
-      // ADD + UPDATE
-      deviceMap.forEach(dc => {
-        const existing = realm
-          .objects<Contact>('Contact')
-          .filtered('phone == $0', dc.phone)[0];
+      toDelete.forEach(item => {
+        if (item.isValid()) {
+          realm.delete(item);
+        }
+      });
 
-        if (existing) {
+      // =====================
+      // ADD + UPDATE
+      // =====================
+      deviceMap.forEach(dc => {
+        const existing =
+          realm
+            .objects<Contact>('Contact')
+            .filtered('deviceContactId == $0', dc.deviceContactId)[0] ||
+          realm
+            .objects<Contact>('Contact')
+            .filtered('phone == $0', dc.phone)[0];
+
+        if (existing && existing.isValid()) {
+          // UPDATE ALL FIELDS
           existing.firstName = dc.firstName;
           existing.lastName = dc.lastName;
 
-          if (!existing.profileImageUrl) {
+          if (existing.phone !== dc.phone) {
+            existing.phone = dc.phone; // phone number
+          }
+
+          if (!existing.deviceContactId) {
+            existing.deviceContactId = dc.deviceContactId;
+          }
+
+          if (!existing.profileImageUrl && dc.profileImageUrl) {
             existing.profileImageUrl = dc.profileImageUrl;
           }
         } else {
-          const random = Math.floor(Math.random() * 100);
-          const fallbackAvatar = `https://randomuser.me/api/portraits/men/${random}.jpg`;
+          const random = Math.floor(Math.random() * 70);
+          const fallbackAvatar = `https://i.pravatar.cc/200?img=${random}`;
 
           realm.create<Contact>('Contact', {
             _id: new BSON.ObjectId(),
+            deviceContactId: dc.deviceContactId,
             firstName: dc.firstName,
             lastName: dc.lastName,
             phone: dc.phone,
@@ -75,7 +127,9 @@ export const getDeviceContacts = async (realm: Realm) => {
   }
 };
 
-//function to add contacts to local device contacts
+// =====================
+// ADD TO DEVICE
+// =====================
 export const addToDeviceContacts = async ({
   firstName,
   lastName,
@@ -95,5 +149,6 @@ export const addToDeviceContacts = async ({
       },
     ],
   };
-  return await Contacts.addContact(newContact);
+
+  return await Contacts.addContact(newContact); // returns recordID
 };
