@@ -24,6 +24,8 @@ import { getDeviceContacts } from '../services/DeviceContact';
 type Props = {};
 
 const HomeScreen = (props: Props) => {
+  //loading screen
+  const [loading, setLoading] = useState(true);
   //contact obj
   const [contacts, setContacts] = useState<Contact[]>([]);
   //useState to show and hide add model
@@ -43,6 +45,7 @@ const HomeScreen = (props: Props) => {
     let data: Realm.Results<Contact>;
 
     const loadData = async () => {
+      setLoading(true);
       try {
         realm = await getRealm();
         // seed / insert initial data
@@ -59,6 +62,8 @@ const HomeScreen = (props: Props) => {
         showToast('success', 'Local contacts sync sucessfully');
       } catch (e) {
         console.debug(e);
+      } finally {
+        setLoading(false);
       }
 
       //  live updates
@@ -121,7 +126,14 @@ const HomeScreen = (props: Props) => {
     setFirstName(contact.firstName);
     setLastName(contact.lastName);
   }
-
+  //if cotnacts are syncing
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Loading contacts...</Text>
+      </View>
+    );
+  }
   return (
     <View style={{ flex: 1, backgroundColor: '#F2F2F7' }}>
       <View style={styles.header}>

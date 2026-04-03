@@ -13,7 +13,11 @@ export const getDeviceContacts = async (realm: Realm) => {
     const firstName = contact.givenName || '';
     const lastName = contact.familyName || '';
     const phone = contact.phoneNumbers[0]?.number || '';
-    addContact(realm, { firstName, lastName, phone });
+    //dont add exiting contact again (avoids duplicates)
+    const existing = realm.objects('Contact').filtered('phone == $0', phone);
+    if (existing.length === 0) {
+      addContact(realm, { firstName, lastName, phone });
+    }
   });
 
   return [];
