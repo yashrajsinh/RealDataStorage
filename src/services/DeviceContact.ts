@@ -22,3 +22,26 @@ export const getDeviceContacts = async (realm: Realm) => {
 
   return [];
 };
+
+//function to add contacts to local device contacts
+export const addToDeviceContacts = async ({
+  firstName,
+  lastName,
+  phone,
+}: {
+  firstName: string;
+  lastName: string;
+  phone: string;
+}) => {
+  const newContact = {
+    givenName: firstName,
+    familyName: lastName,
+    phoneNumbers: [
+      {
+        label: 'mobile',
+        number: phone,
+      },
+    ],
+  };
+  return await Contacts.addContact(newContact);
+};

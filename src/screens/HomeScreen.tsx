@@ -19,11 +19,14 @@ import Toast from 'react-native-toast-message';
 //BSON reference
 import { BSON } from 'realm';
 //function to import local contact
-import { getDeviceContacts } from '../services/DeviceContact';
+import {
+  getDeviceContacts,
+  addToDeviceContacts,
+} from '../services/DeviceContact';
+//android run time permission
+import { PermissionsAndroid } from 'react-native';
 
-type Props = {};
-
-const HomeScreen = (props: Props) => {
+const HomeScreen = () => {
   //loading screen
   const [loading, setLoading] = useState(true);
   //contact obj
@@ -175,12 +178,34 @@ const HomeScreen = (props: Props) => {
       )}
       {showInput && (
         <InputContact
-          onAdd={data => {
-            if (realmInstance) {
-              addContact(realmInstance, data);
-              showToast('success', 'Added ' + data.firstName);
+          onAdd={async data => {
+            if (!realmInstance) return;
+            //save to realM db
+            addContact(realmInstance, data);
+            // Ask permission BEFORE device save
+            const permission = await PermissionsAndroid.requestMultiple([
+              PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
+              PermissionsAndroid.PERMISSIONS.WRITE_CONTACTS,
+            ]);
+            const granted =
+              permission['android.permission.READ_CONTACTS'] ===
+                PermissionsAndroid.RESULTS.GRANTED &&
+              permission['android.permission.WRITE_CONTACTS'] ===
+                PermissionsAndroid.RESULTS.GRANTED;
+
+            if (!granted) {
+              showToast('error', 'Saved locally, but no permission for device');
+              setShowInput(false);
+              return;
             }
-            setShowInput(!showInput);
+            //add to local device
+            try {
+              await addToDeviceContacts(data);
+              showToast('success', 'Saved to phone contacts');
+            } catch (error) {
+              showToast('error', error + '');
+            }
+            setShowInput(false);
           }}
           onCancel={() => {
             setShowInput(false);
