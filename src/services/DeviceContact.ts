@@ -1,26 +1,87 @@
 import Contacts from 'react-native-contacts';
-import { addContact } from '../db/realm';
+import { Contact } from '../model/Contact';
 import Realm from 'realm';
+//BSON reference
+import { BSON } from 'realm';
+
+//helper
+const normalizePhone = (phone: string) => {
+  return phone.replace(/\D/g, ''); // remove all non-digits
+};
 
 export const getDeviceContacts = async (realm: Realm) => {
-  const permission = await Contacts.requestPermission();
+  try {
+    const deviceContacts = await Contacts.getAll();
 
-  if (permission != 'authorized') return;
+    const deviceMap = new Map<
+      string,
+      {
+        firstName: string;
+        lastName: string;
+        phone: string;
+        profileImageUrl: string;
+      }
+    >();
 
-  const deviceContacts = await Contacts.getAll();
+    deviceContacts.forEach(contact => {
+      const rawPhone = contact.phoneNumbers[0]?.number;
+      if (!rawPhone) return;
 
-  deviceContacts.forEach(contact => {
-    const firstName = contact.givenName || '';
-    const lastName = contact.familyName || '';
-    const phone = contact.phoneNumbers[0]?.number || '';
-    //dont add exiting contact again (avoids duplicates)
-    const existing = realm.objects('Contact').filtered('phone == $0', phone);
-    if (existing.length === 0) {
-      addContact(realm, { firstName, lastName, phone });
-    }
-  });
+      const phone = normalizePhone(rawPhone);
 
-  return [];
+      deviceMap.set(phone, {
+        firstName: contact.givenName || '',
+        lastName: contact.familyName || '',
+        phone,
+        profileImageUrl: contact.hasThumbnail ? contact.thumbnailPath : '',
+      });
+    });
+
+    realm.write(() => {
+      const realmContacts = realm.objects<Contact>('Contact');
+
+      // DELETE
+      realmContacts.forEach(rc => {
+        const normalized = normalizePhone(rc.phone);
+
+        if (!deviceMap.has(normalized)) {
+          realm.delete(rc);
+        }
+      });
+
+      // ADD + UPDATE
+      deviceMap.forEach(dc => {
+        const existing = realm
+          .objects<Contact>('Contact')
+          .filtered('phone == $0', dc.phone)[0];
+
+        if (existing) {
+          // UPDATE (do NOT override image blindly)
+          existing.firstName = dc.firstName;
+          existing.lastName = dc.lastName;
+
+          // Only set image if empty
+          if (!existing.profileImageUrl) {
+            existing.profileImageUrl = dc.profileImageUrl;
+          }
+        } else {
+          // ADD with fallback avatar
+          const random = Math.floor(Math.random() * 100);
+          const fallbackAvatar = `https://randomuser.me/api/portraits/men/${random}.jpg`;
+
+          realm.create<Contact>('Contact', {
+            _id: new BSON.ObjectId(),
+            firstName: dc.firstName,
+            lastName: dc.lastName,
+            phone: dc.phone,
+            profileImageUrl: dc.profileImageUrl || fallbackAvatar,
+          });
+        }
+      });
+    });
+  } catch (error) {
+    console.log('Error fetching device contacts:', error);
+  }
 };
 
 //function to add contacts to local device contacts

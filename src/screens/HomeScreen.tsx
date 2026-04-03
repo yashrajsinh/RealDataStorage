@@ -50,6 +50,8 @@ const HomeScreen = () => {
   const [showEditModel, setShowEditModel] = useState(false);
   //instance to hold realM
   const [realmInstance, setRealmInstance] = useState<Realm | null>(null);
+  //var for pull to refresh
+  const [refreshing, setRefreshing] = useState(false);
 
   const [selectedContactId, setSelectedContactId] =
     useState<BSON.ObjectId | null>(null);
@@ -123,7 +125,20 @@ const HomeScreen = () => {
       },
     ]);
   };
+  //pull to refresh handler
+  const handleRefresh = async () => {
+    if (!realmInstance) return;
 
+    setRefreshing(true);
+    try {
+      await getDeviceContacts(realmInstance);
+      showToast('success', 'Contacts refreshed');
+    } catch (e) {
+      showToast('error', 'Refresh failed');
+    } finally {
+      setRefreshing(false);
+    }
+  };
   const handleEdit = (contact: Contact) => {
     setShowEditModel(true);
     setSelectedContactId(contact._id);
@@ -148,6 +163,8 @@ const HomeScreen = () => {
 
       <FlatList
         data={contacts}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         keyExtractor={item => item._id.toHexString()}
         renderItem={({ item, index }) => {
           if (!item.isValid()) return null;
