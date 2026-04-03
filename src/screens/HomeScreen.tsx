@@ -18,10 +18,14 @@ import EditModal from '../components/EditModel/EditModel';
 import Toast from 'react-native-toast-message';
 //BSON reference
 import { BSON } from 'realm';
+//function to import local contact
+import { getDeviceContacts } from '../services/DeviceContact';
 
 type Props = {};
 
 const HomeScreen = (props: Props) => {
+  //loading screen
+  const [loading, setLoading] = useState(true);
   //contact obj
   const [contacts, setContacts] = useState<Contact[]>([]);
   //useState to show and hide add model
@@ -41,20 +45,25 @@ const HomeScreen = (props: Props) => {
     let data: Realm.Results<Contact>;
 
     const loadData = async () => {
+      setLoading(true);
       try {
         realm = await getRealm();
         // seed / insert initial data
         fetchContact(realm);
         //setting RealM instance for state
         setRealmInstance(realm);
+        //add device cotnact to realM DB
+        await getDeviceContacts(realm);
 
         // get data
         data = realm.objects<Contact>('Contact');
 
         setContacts([...data]);
-        showToast('success', 'Data sync sucessfully');
+        showToast('success', 'Local contacts sync sucessfully');
       } catch (e) {
         console.debug(e);
+      } finally {
+        setLoading(false);
       }
 
       //  live updates
@@ -87,16 +96,24 @@ const HomeScreen = (props: Props) => {
   }
 
   //function to handle delete
-  function handleDelete(contactId: BSON.ObjectId) {
+  function handleDelete(index: number) {
     Alert.alert('Delete Contact', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
         style: 'destructive',
         onPress: () => {
-          if (!realmInstance) return;
-          deleteContact(realmInstance, contactId);
-          showToast('error', 'Deleted');
+          // Optimistic UI update first
+          setContacts(prev => prev.filter((_, i) => i !== index));
+
+          // DB delete after render
+          setTimeout(() => {
+            const targetId = contacts[index]?._id;
+            if (realmInstance && targetId) {
+              deleteContact(realmInstance, targetId);
+            }
+          }, 100);
+          showToast('success', 'Deleted');
         },
       },
     ]);
@@ -109,7 +126,14 @@ const HomeScreen = (props: Props) => {
     setFirstName(contact.firstName);
     setLastName(contact.lastName);
   }
-
+  //if cotnacts are syncing
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Loading contacts...</Text>
+      </View>
+    );
+  }
   return (
     <View style={{ flex: 1, backgroundColor: '#F2F2F7' }}>
       <View style={styles.header}>
@@ -119,13 +143,13 @@ const HomeScreen = (props: Props) => {
         data={contacts}
         extraData={contacts}
         keyExtractor={item => item._id.toHexString()}
-        renderItem={({ item }) => {
-          if (!item.isValid()) return null; // ← add this
+        renderItem={({ item, index }) => {
+          if (!item.isValid()) return null; //return if delete
           return (
             <ContactCard
               contact={item}
               onPress={() => handleEdit(item)}
-              onDelete={() => handleDelete(item._id)}
+              onDelete={() => handleDelete(index)}
             />
           );
         }}
