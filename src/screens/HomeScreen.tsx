@@ -18,8 +18,6 @@ import InputContact from '../components/InputContactCard/InputContact';
 import FloatingButton from '../components/FloatingButton/FloatingButton';
 import EditModal from '../components/EditModel/EditModel';
 
-import { fetchContact } from '../data/ContactsData';
-
 import {
   getDeviceContacts,
   addToDeviceContacts,
@@ -57,7 +55,7 @@ const HomeScreen = () => {
       setLoading(true);
       try {
         realm = await getRealm();
-        fetchContact(realm);
+
         setRealmInstance(realm);
 
         // PERMISSION FIX (ANDROID CRASH FIX)
