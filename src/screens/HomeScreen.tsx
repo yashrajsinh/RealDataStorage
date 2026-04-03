@@ -9,54 +9,45 @@ import {
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
 
-// Realm
 import Realm, { BSON } from 'realm';
-
-// Model
 import { Contact } from '../model/Contact';
-
-// DB
 import { addContact, deleteContact, getRealm, editContact } from '../db/realm';
 
-// Components
 import ContactCard from '../components/ContactCard/ContactCard';
 import InputContact from '../components/InputContactCard/InputContact';
 import FloatingButton from '../components/FloatingButton/FloatingButton';
 import EditModal from '../components/EditModel/EditModel';
 
-// Data
 import { fetchContact } from '../data/ContactsData';
 
-// Services
 import {
   getDeviceContacts,
   addToDeviceContacts,
 } from '../services/DeviceContact';
 
-// Toast
 import Toast from 'react-native-toast-message';
-
-// Contacts (iOS permission)
 import Contacts from 'react-native-contacts';
 
 const HomeScreen = () => {
-  //loading state
   const [loading, setLoading] = useState(true);
-  //setting contacts
   const [contacts, setContacts] = useState<Contact[]>([]);
-  //state for adding new value
   const [showInput, setShowInput] = useState(false);
-  //state for editing a model
   const [showEditModel, setShowEditModel] = useState(false);
-  //instance to hold realM
   const [realmInstance, setRealmInstance] = useState<Realm | null>(null);
-  //var for pull to refresh
   const [refreshing, setRefreshing] = useState(false);
 
   const [selectedContactId, setSelectedContactId] =
     useState<BSON.ObjectId | null>(null);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+
+  const showToast = (type: string, message: string) => {
+    Toast.show({
+      type,
+      text1: message,
+      position: 'bottom',
+    });
+  };
 
   useEffect(() => {
     let realm: Realm;
@@ -66,21 +57,35 @@ const HomeScreen = () => {
       setLoading(true);
       try {
         realm = await getRealm();
-
         fetchContact(realm);
         setRealmInstance(realm);
 
-        await getDeviceContacts(realm);
+        // PERMISSION FIX (ANDROID CRASH FIX)
+        let hasPermission = false;
+
+        if (Platform.OS === 'android') {
+          const permission = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
+          );
+          hasPermission = permission === PermissionsAndroid.RESULTS.GRANTED;
+        } else {
+          const permission = await Contacts.requestPermission();
+          hasPermission = permission === 'authorized';
+        }
+
+        if (hasPermission) {
+          await getDeviceContacts(realm);
+          showToast('success', 'Contacts synced');
+        } else {
+          showToast('error', 'No permission to read contacts');
+        }
 
         data = realm.objects<Contact>('Contact');
-
         setContacts([...data]);
 
         data.addListener(() => {
           setContacts([...data]);
         });
-
-        showToast('success', 'Contacts synced');
       } catch (e) {
         console.debug(e);
       } finally {
@@ -91,18 +96,12 @@ const HomeScreen = () => {
     loadData();
 
     return () => {
-      if (data) data.removeAllListeners();
-      if (realm) realm.close();
+      try {
+        data?.removeAllListeners();
+        realm?.close();
+      } catch (e) {}
     };
   }, []);
-
-  const showToast = (type: string, message: string) => {
-    Toast.show({
-      type,
-      text1: message,
-      position: 'bottom',
-    });
-  };
 
   const handleDelete = (index: number) => {
     Alert.alert('Delete Contact', 'Are you sure?', [
@@ -125,7 +124,7 @@ const HomeScreen = () => {
       },
     ]);
   };
-  //pull to refresh handler
+
   const handleRefresh = async () => {
     if (!realmInstance) return;
 
@@ -133,12 +132,13 @@ const HomeScreen = () => {
     try {
       await getDeviceContacts(realmInstance);
       showToast('success', 'Contacts refreshed');
-    } catch (e) {
+    } catch {
       showToast('error', 'Refresh failed');
     } finally {
       setRefreshing(false);
     }
   };
+
   const handleEdit = (contact: Contact) => {
     setShowEditModel(true);
     setSelectedContactId(contact._id);
@@ -146,7 +146,6 @@ const HomeScreen = () => {
     setLastName(contact.lastName);
   };
 
-  // Loading UI
   if (loading) {
     return (
       <View style={styles.center}>
@@ -157,9 +156,7 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Contacts</Text>
-      </View>
+      <Text style={styles.title}>Contacts</Text>
 
       <FlatList
         data={contacts}
@@ -178,7 +175,6 @@ const HomeScreen = () => {
         }}
       />
 
-      {/* Edit Modal */}
       {showEditModel && (
         <EditModal
           visible={showEditModel}
@@ -201,18 +197,15 @@ const HomeScreen = () => {
         />
       )}
 
-      {/* Add Contact */}
       {showInput && (
         <InputContact
           onAdd={async data => {
             if (!realmInstance) return;
 
-            // 1. Save to Realm
             addContact(realmInstance, data);
 
             let hasPermission = false;
 
-            // 2. Permissions
             if (Platform.OS === 'android') {
               const permission = await PermissionsAndroid.requestMultiple([
                 PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
@@ -230,17 +223,16 @@ const HomeScreen = () => {
             }
 
             if (!hasPermission) {
-              showToast('error', 'Saved locally, but no permission for device');
+              showToast('error', 'Saved locally, but no permission');
               setShowInput(false);
               return;
             }
 
-            // 3. Save to device
             try {
               await addToDeviceContacts(data);
               showToast('success', 'Saved to phone contacts');
-            } catch (e) {
-              showToast('error', 'Saved locally, but failed on device');
+            } catch {
+              showToast('error', 'Saved locally, device failed');
             }
 
             setShowInput(false);
@@ -258,23 +250,7 @@ const HomeScreen = () => {
 export default HomeScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F2F2F7',
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#000',
-  },
+  container: { flex: 1, backgroundColor: '#F2F2F7', padding: 16 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  title: { fontSize: 32, fontWeight: '700', color: '#000' },
 });

@@ -6,22 +6,14 @@ import { BSON } from 'realm';
 
 //helper
 const normalizePhone = (phone: string) => {
-  return phone.replace(/\D/g, ''); // remove all non-digits
+  return phone.replace(/\D/g, '');
 };
 
 export const getDeviceContacts = async (realm: Realm) => {
   try {
     const deviceContacts = await Contacts.getAll();
 
-    const deviceMap = new Map<
-      string,
-      {
-        firstName: string;
-        lastName: string;
-        phone: string;
-        profileImageUrl: string;
-      }
-    >();
+    const deviceMap = new Map();
 
     deviceContacts.forEach(contact => {
       const rawPhone = contact.phoneNumbers[0]?.number;
@@ -33,7 +25,10 @@ export const getDeviceContacts = async (realm: Realm) => {
         firstName: contact.givenName || '',
         lastName: contact.familyName || '',
         phone,
-        profileImageUrl: contact.hasThumbnail ? contact.thumbnailPath : '',
+        profileImageUrl:
+          contact.hasThumbnail && contact.thumbnailPath
+            ? contact.thumbnailPath
+            : '',
       });
     });
 
@@ -43,7 +38,6 @@ export const getDeviceContacts = async (realm: Realm) => {
       // DELETE
       realmContacts.forEach(rc => {
         const normalized = normalizePhone(rc.phone);
-
         if (!deviceMap.has(normalized)) {
           realm.delete(rc);
         }
@@ -56,16 +50,13 @@ export const getDeviceContacts = async (realm: Realm) => {
           .filtered('phone == $0', dc.phone)[0];
 
         if (existing) {
-          // UPDATE (do NOT override image blindly)
           existing.firstName = dc.firstName;
           existing.lastName = dc.lastName;
 
-          // Only set image if empty
           if (!existing.profileImageUrl) {
             existing.profileImageUrl = dc.profileImageUrl;
           }
         } else {
-          // ADD with fallback avatar
           const random = Math.floor(Math.random() * 100);
           const fallbackAvatar = `https://randomuser.me/api/portraits/men/${random}.jpg`;
 
