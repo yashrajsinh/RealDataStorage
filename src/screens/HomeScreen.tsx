@@ -6,6 +6,7 @@ import {
   Text,
   PermissionsAndroid,
   Platform,
+  TextInput,
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
 
@@ -155,7 +156,7 @@ const HomeScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Contacts</Text>
-
+      <TextInput placeholder="Search" style={styles.search} />
       <FlatList
         data={contacts}
         refreshing={refreshing}
@@ -225,7 +226,7 @@ const HomeScreen = () => {
               } catch {}
             }
 
-            // ✅ Save in Realm WITH device ID
+            //  Save in Realm WITH device ID
             realmInstance.write(() => {
               realmInstance.create('Contact', {
                 _id: new BSON.ObjectId(),
@@ -264,4 +265,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F2F2F7', padding: 16 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   title: { fontSize: 32, fontWeight: '700', color: '#000' },
+  search: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginVertical: 10,
+    fontSize: 16,
+  },
 });
