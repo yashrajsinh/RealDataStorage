@@ -1,43 +1,56 @@
-import { View, FlatList, Alert, StyleSheet, Text } from 'react-native';
+import {
+  View,
+  FlatList,
+  Alert,
+  StyleSheet,
+  Text,
+  PermissionsAndroid,
+  Platform,
+} from 'react-native';
 import React, { useEffect, useState } from 'react';
-//realM
-import Realm from 'realm';
-//model
+
+// Realm
+import Realm, { BSON } from 'realm';
+
+// Model
 import { Contact } from '../model/Contact';
-//db
+
+// DB
 import { addContact, deleteContact, getRealm, editContact } from '../db/realm';
-//components
+
+// Components
 import ContactCard from '../components/ContactCard/ContactCard';
 import InputContact from '../components/InputContactCard/InputContact';
 import FloatingButton from '../components/FloatingButton/FloatingButton';
-//data func
-import { fetchContact } from '../data/ContactsData';
-//Edit component
 import EditModal from '../components/EditModel/EditModel';
-//Toast
-import Toast from 'react-native-toast-message';
-//BSON reference
-import { BSON } from 'realm';
-//function to import local contact
+
+// Data
+import { fetchContact } from '../data/ContactsData';
+
+// Services
 import {
   getDeviceContacts,
   addToDeviceContacts,
 } from '../services/DeviceContact';
-//android run time permission
-import { PermissionsAndroid } from 'react-native';
+
+// Toast
+import Toast from 'react-native-toast-message';
+
+// Contacts (iOS permission)
+import Contacts from 'react-native-contacts';
 
 const HomeScreen = () => {
-  //loading screen
+  //loading state
   const [loading, setLoading] = useState(true);
-  //contact obj
+  //setting contacts
   const [contacts, setContacts] = useState<Contact[]>([]);
-  //useState to show and hide add model
+  //state for adding new value
   const [showInput, setShowInput] = useState(false);
-  //useState to show and hide Edit model
+  //state for editing a model
   const [showEditModel, setShowEditModel] = useState(false);
-  //RealM state
+  //instance to hold realM
   const [realmInstance, setRealmInstance] = useState<Realm | null>(null);
-  //edit fields
+
   const [selectedContactId, setSelectedContactId] =
     useState<BSON.ObjectId | null>(null);
   const [firstName, setFirstName] = useState('');
@@ -51,103 +64,93 @@ const HomeScreen = () => {
       setLoading(true);
       try {
         realm = await getRealm();
-        // seed / insert initial data
+
         fetchContact(realm);
-        //setting RealM instance for state
         setRealmInstance(realm);
-        //add device cotnact to realM DB
+
         await getDeviceContacts(realm);
 
-        // get data
         data = realm.objects<Contact>('Contact');
 
         setContacts([...data]);
-        showToast('success', 'Local contacts sync sucessfully');
+
+        data.addListener(() => {
+          setContacts([...data]);
+        });
+
+        showToast('success', 'Contacts synced');
       } catch (e) {
         console.debug(e);
       } finally {
         setLoading(false);
       }
-
-      //  live updates
-      data.addListener(() => {
-        setContacts([...data]);
-      });
     };
 
     loadData();
 
     return () => {
-      //  cleanup listener
-      if (data) {
-        data.removeAllListeners();
-      }
-
-      // close realm
-      if (realm) {
-        realm.close();
-      }
+      if (data) data.removeAllListeners();
+      if (realm) realm.close();
     };
   }, []);
 
-  function showToast(type: string, message: string) {
+  const showToast = (type: string, message: string) => {
     Toast.show({
-      type: type,
+      type,
       text1: message,
       position: 'bottom',
     });
-  }
+  };
 
-  //function to handle delete
-  function handleDelete(index: number) {
+  const handleDelete = (index: number) => {
     Alert.alert('Delete Contact', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
         style: 'destructive',
         onPress: () => {
-          // Optimistic UI update first
           setContacts(prev => prev.filter((_, i) => i !== index));
 
-          // DB delete after render
           setTimeout(() => {
             const targetId = contacts[index]?._id;
             if (realmInstance && targetId) {
               deleteContact(realmInstance, targetId);
             }
           }, 100);
+
           showToast('success', 'Deleted');
         },
       },
     ]);
-  }
+  };
 
-  //function to hanlde edit
-  function handleEdit(contact: Contact) {
-    setShowEditModel(!showEditModel);
+  const handleEdit = (contact: Contact) => {
+    setShowEditModel(true);
     setSelectedContactId(contact._id);
     setFirstName(contact.firstName);
     setLastName(contact.lastName);
-  }
-  //if cotnacts are syncing
+  };
+
+  // Loading UI
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.center}>
         <Text>Loading contacts...</Text>
       </View>
     );
   }
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#F2F2F7' }}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Contacts</Text>
       </View>
+
       <FlatList
         data={contacts}
-        extraData={contacts}
         keyExtractor={item => item._id.toHexString()}
         renderItem={({ item, index }) => {
-          if (!item.isValid()) return null; //return if delete
+          if (!item.isValid()) return null;
           return (
             <ContactCard
               contact={item}
@@ -157,62 +160,79 @@ const HomeScreen = () => {
           );
         }}
       />
+
+      {/* Edit Modal */}
       {showEditModel && (
         <EditModal
           visible={showEditModel}
-          onCancel={() => setShowEditModel(!showEditModel)}
+          onCancel={() => setShowEditModel(false)}
           firstName={firstName}
           lastName={lastName}
           onChangeFirstName={setFirstName}
           onChangeLastName={setLastName}
           onUpdate={() => {
             if (!realmInstance || !selectedContactId) return;
+
             editContact(realmInstance, selectedContactId, {
               firstName,
               lastName,
             });
+
             showToast('success', 'Updated');
             setShowEditModel(false);
           }}
         />
       )}
+
+      {/* Add Contact */}
       {showInput && (
         <InputContact
           onAdd={async data => {
             if (!realmInstance) return;
-            //save to realM db
-            addContact(realmInstance, data);
-            // Ask permission BEFORE device save
-            const permission = await PermissionsAndroid.requestMultiple([
-              PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
-              PermissionsAndroid.PERMISSIONS.WRITE_CONTACTS,
-            ]);
-            const granted =
-              permission['android.permission.READ_CONTACTS'] ===
-                PermissionsAndroid.RESULTS.GRANTED &&
-              permission['android.permission.WRITE_CONTACTS'] ===
-                PermissionsAndroid.RESULTS.GRANTED;
 
-            if (!granted) {
+            // 1. Save to Realm
+            addContact(realmInstance, data);
+
+            let hasPermission = false;
+
+            // 2. Permissions
+            if (Platform.OS === 'android') {
+              const permission = await PermissionsAndroid.requestMultiple([
+                PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
+                PermissionsAndroid.PERMISSIONS.WRITE_CONTACTS,
+              ]);
+
+              hasPermission =
+                permission['android.permission.READ_CONTACTS'] ===
+                  PermissionsAndroid.RESULTS.GRANTED &&
+                permission['android.permission.WRITE_CONTACTS'] ===
+                  PermissionsAndroid.RESULTS.GRANTED;
+            } else {
+              const permission = await Contacts.requestPermission();
+              hasPermission = permission === 'authorized';
+            }
+
+            if (!hasPermission) {
               showToast('error', 'Saved locally, but no permission for device');
               setShowInput(false);
               return;
             }
-            //add to local device
+
+            // 3. Save to device
             try {
               await addToDeviceContacts(data);
               showToast('success', 'Saved to phone contacts');
-            } catch (error) {
-              showToast('error', error + '');
+            } catch (e) {
+              showToast('error', 'Saved locally, but failed on device');
             }
+
             setShowInput(false);
           }}
-          onCancel={() => {
-            setShowInput(false);
-          }}
+          onCancel={() => setShowInput(false)}
         />
       )}
-      <FloatingButton onPress={() => setShowInput(!showInput)} />
+
+      <FloatingButton onPress={() => setShowInput(true)} />
       <Toast />
     </View>
   );
@@ -221,13 +241,20 @@ const HomeScreen = () => {
 export default HomeScreen;
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F2F2F7',
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   header: {
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
-    backgroundColor: '#F2F2F7',
   },
-
   title: {
     fontSize: 32,
     fontWeight: '700',
