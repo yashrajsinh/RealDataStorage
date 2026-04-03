@@ -199,9 +199,7 @@ const HomeScreen = () => {
         <InputContact
           onAdd={async data => {
             if (!realmInstance) return;
-
-            addContact(realmInstance, data);
-
+            let deviceId: string | undefined;
             let hasPermission = false;
 
             if (Platform.OS === 'android') {
@@ -220,18 +218,33 @@ const HomeScreen = () => {
               hasPermission = permission === 'authorized';
             }
 
-            if (!hasPermission) {
-              showToast('error', 'Saved locally, but no permission');
-              setShowInput(false);
-              return;
+            if (hasPermission) {
+              try {
+                const res = await addToDeviceContacts(data);
+                deviceId = res?.recordID; // THIS IS KEY
+              } catch {}
             }
 
-            try {
-              await addToDeviceContacts(data);
-              showToast('success', 'Saved to phone contacts');
-            } catch {
-              showToast('error', 'Saved locally, device failed');
-            }
+            // ✅ Save in Realm WITH device ID
+            realmInstance.write(() => {
+              realmInstance.create('Contact', {
+                _id: new BSON.ObjectId(),
+                deviceContactId: deviceId, //  link stored
+                firstName: data.firstName,
+                lastName: data.lastName,
+                phone: data.phone,
+                profileImageUrl: `https://i.pravatar.cc/200?img=${Math.floor(
+                  Math.random() * 70,
+                )}`,
+              });
+            });
+
+            showToast(
+              deviceId ? 'success' : 'error',
+              deviceId
+                ? 'Saved to phone + app'
+                : 'Saved locally (no permission)',
+            );
 
             setShowInput(false);
           }}
