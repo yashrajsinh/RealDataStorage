@@ -18,6 +18,8 @@ import EditModal from '../components/EditModel/EditModel';
 import Toast from 'react-native-toast-message';
 //BSON reference
 import { BSON } from 'realm';
+//function to import local contact
+import { getDeviceContacts } from '../services/DeviceContact';
 
 type Props = {};
 
@@ -47,12 +49,14 @@ const HomeScreen = (props: Props) => {
         fetchContact(realm);
         //setting RealM instance for state
         setRealmInstance(realm);
+        //add device cotnact to realM DB
+        await getDeviceContacts(realm);
 
         // get data
         data = realm.objects<Contact>('Contact');
 
         setContacts([...data]);
-        showToast('success', 'Data sync sucessfully');
+        showToast('success', 'Local contacts sync sucessfully');
       } catch (e) {
         console.debug(e);
       }

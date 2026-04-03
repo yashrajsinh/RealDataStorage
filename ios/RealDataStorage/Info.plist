@@ -10,6 +10,8 @@
 	<string>RealDataStorage</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
+	<key>NSContactsUsageDescription</key>
+<string>This app needs access to contacts to blackmail you</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
